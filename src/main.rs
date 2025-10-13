@@ -3,10 +3,17 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::collections::HashMap;
 
-fn preprocess_banlist() -> HashMap<String, usize> {
+fn preprocess_banlist(file_path: &str) -> HashMap<String, usize> {
+    let file = File::open(file_path).expect("failed to open file");
+    let reader = BufReader::new(file);
     let mut words: HashMap<String, usize> = HashMap::new();
-    *words.entry("I".to_string()).or_insert(0) += 1;
-    *words.entry("the".to_string()).or_insert(0) += 1;
+    for line in reader.lines() {
+        let line = line.expect("failed to read");
+        for word in line.split_whitespace().map(|w| w.to_lowercase()) { // I don't want to add
+                                                                        // split by commas
+            *words.entry(word).or_insert(0) += 1;
+        }
+    }
     return words;
 }
 
@@ -49,6 +56,6 @@ fn main() {
         return;
     }
     let words = parse_words(&args[1]);
-    let banned = preprocess_banlist();
+    let banned = preprocess_banlist(&args[2]);
     sort_words(&banned, words);
 }

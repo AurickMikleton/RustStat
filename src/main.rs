@@ -4,6 +4,12 @@ use std::io::{BufRead, BufReader};
 use std::collections::HashMap;
 use std::collections::HashSet;
 
+struct TokenizedData {
+    words: HashMap,
+    word_count: u32,
+    scentence_count: u32,
+}
+
 fn preprocess_banlist(file_path: &str) -> HashSet<String> {
     let file = File::open(file_path).expect("failed to open file");
     let reader = BufReader::new(file);
@@ -21,12 +27,19 @@ fn parse_words(file_path: &str)  -> HashMap<String, usize> {
     let file = File::open(file_path).expect("failed to open file");
     let reader = BufReader::new(file);
     let mut words: HashMap<String, usize> = HashMap::new();
-    let delimeters = ['\n', ' ', '.', '"', '.', '?', ',', '!'];
+    let whitespace = ['\n', ' '];
+    let punctuation = ['.', '"', '.', '?', ',', '!'];
+    let mut scentence_count: u32 = 0;
+    let mut word_count: u32 = 0;
 
     for line in reader.lines() {
         let line = line.expect("failed to read");
-        for word in line.split(&delimeters[..]).map(|w| w.to_lowercase()) {
-            *words.entry(word).or_insert(0) += 1;
+        for scentences in line.split(&punctuation[..]) {
+            for word in scentences.split(&whitespace[..]).map(|w| w.to_lowercase()) {
+                *words.entry(word).or_insert(0) += 1;
+                word_count += 1;
+            }
+            scentence_count += 1;
         }
     }
 

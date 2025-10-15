@@ -10,8 +10,7 @@ fn preprocess_banlist(file_path: &str) -> HashSet<String> {
     let mut words: HashSet<String> = HashSet::new();
     for line in reader.lines() {
         let line = line.expect("failed to read");
-        for word in line.split_whitespace().map(|w| w.to_lowercase()) { // I don't want to add
-                                                                        // split by commas
+        for word in line.split(&['\n', ','][..]).map(|w| w.to_lowercase()) {
             words.insert(word);
         }
     }
@@ -22,10 +21,11 @@ fn parse_words(file_path: &str)  -> HashMap<String, usize> {
     let file = File::open(file_path).expect("failed to open file");
     let reader = BufReader::new(file);
     let mut words: HashMap<String, usize> = HashMap::new();
+    let delimeters = ['\n', ' ', '.', '"', '.', '?', ',', '!'];
 
     for line in reader.lines() {
         let line = line.expect("failed to read");
-        for word in line.split_whitespace().map(|w| w.to_lowercase()) {
+        for word in line.split(&delimeters[..]).map(|w| w.to_lowercase()) {
             *words.entry(word).or_insert(0) += 1;
         }
     }

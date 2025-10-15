@@ -33,17 +33,13 @@ fn parse_words(file_path: &str)  -> HashMap<String, usize> {
     return words;
 }
 
-fn check_banned(banned: &HashSet<String>, word: &str) -> bool {
-    banned.contains(word)
-}
-
 fn sort_words(banned: &HashSet<String>, words: &HashMap<String, usize>) {
     let mut hash_vector: Vec<(&String, &usize)> = words.iter().collect();
     hash_vector.sort_by(|a, b| b.1.cmp(a.1));
 
     let mut i: usize = 0;
     for (word, instances) in hash_vector {
-        if check_banned(banned, word) {continue};
+        if banned.contains(word) {continue};
         if i >= 5 {break};
         println!("{} / {}", word, instances);
         i+=1;

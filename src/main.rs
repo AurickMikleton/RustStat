@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 
 struct TokenizedData {
-    words: HashMap,
+    words: HashMap<String, usize>,
     word_count: u32,
     scentence_count: u32,
 }
@@ -23,27 +23,29 @@ fn preprocess_banlist(file_path: &str) -> HashSet<String> {
     return words;
 }
 
-fn parse_words(file_path: &str)  -> HashMap<String, usize> {
+fn parse_words(file_path: &str)  -> TokenizedData {
+    //let whitespace = ['\n', ' '];
+    let punctuation = ['.', '"', '.', '?', ',', '!'];
     let file = File::open(file_path).expect("failed to open file");
     let reader = BufReader::new(file);
     let mut words: HashMap<String, usize> = HashMap::new();
-    let whitespace = ['\n', ' '];
-    let punctuation = ['.', '"', '.', '?', ',', '!'];
     let mut scentence_count: u32 = 0;
     let mut word_count: u32 = 0;
-
     for line in reader.lines() {
         let line = line.expect("failed to read");
         for scentences in line.split(&punctuation[..]) {
-            for word in scentences.split(&whitespace[..]).map(|w| w.to_lowercase()) {
+            for word in scentences.split_whitespace().map(|w| w.to_lowercase()) {
                 *words.entry(word).or_insert(0) += 1;
                 word_count += 1;
             }
             scentence_count += 1;
         }
     }
-
-    return words;
+    return TokenizedData {
+        words: words,
+        scentence_count: scentence_count,
+        word_count: word_count,
+    };
 }
 
 fn sort_words(banned: &HashSet<String>, words: &HashMap<String, usize>) {
@@ -67,5 +69,5 @@ fn main() {
     }
     let words = parse_words(&args[1]);
     let banned = preprocess_banlist(&args[2]);
-    sort_words(&banned, &words);
+    sort_words(&banned, &words.words);
 }

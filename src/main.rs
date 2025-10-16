@@ -1,4 +1,5 @@
 use std::env;
+use std::fs;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::collections::HashMap;
@@ -6,6 +7,7 @@ use std::collections::HashSet;
 
 struct TokenizedData {
     words: HashMap<String, usize>,
+    name: String,
     word_count: u32,
     scentence_count: u32,
 }
@@ -23,51 +25,67 @@ fn preprocess_banlist(file_path: &str) -> HashSet<String> {
     return words;
 }
 
-fn parse_words(file_path: &str)  -> TokenizedData {
-    //let whitespace = ['\n', ' '];
-    let punctuation = ['.', '"', '.', '?', ',', '!'];
-    let file = File::open(file_path).expect("failed to open file");
+fn parse_words(file_path_buffer: &std::path::PathBuf, name: &str)  -> TokenizedData {
+    let strip_punctuation = ['_', ';', '"', '.', '?', ',', '!'];
+    let scentence_punctuation = ['.', '?', '!', ';'];
+    let file = File::open(file_path_buffer).expect("failed to open file");
     let reader = BufReader::new(file);
     let mut words: HashMap<String, usize> = HashMap::new();
     let mut scentence_count: u32 = 0;
     let mut word_count: u32 = 0;
     for line in reader.lines() {
         let line = line.expect("failed to read");
-        for scentences in line.split(&punctuation[..]) {
+        for scentences in line.split(&strip_punctuation[..]) {
             for word in scentences.split_whitespace().map(|w| w.to_lowercase()) {
                 *words.entry(word).or_insert(0) += 1;
                 word_count += 1;
             }
-            scentence_count += 1;
+        }
+        let mut i: u32 = 0;
+        for _ in line.split(&scentence_punctuation[..]) {
+            if i > 0 {scentence_count += 1;}
+            i += 1
         }
     }
     return TokenizedData {
         words: words,
         scentence_count: scentence_count,
         word_count: word_count,
+        name: name.to_string(),
     };
 }
 
-fn sort_words(banned: &HashSet<String>, words: &HashMap<String, usize>) {
-    let mut hash_vector: Vec<(&String, &usize)> = words.iter().collect();
+fn generate_output(banned: &HashSet<String>, data: &TokenizedData) {
+    let mut hash_vector: Vec<(&String, &usize)> = data.words.iter().collect();
     hash_vector.sort_by(|a, b| b.1.cmp(a.1));
-
+    print!("{} / ", data.name);
     let mut i: usize = 0;
-    for (word, instances) in hash_vector {
-        if banned.contains(word) {continue};
-        if i >= 5 {break};
-        println!("{} / {}", word, instances);
+    for (word, _) in hash_vector {
+        if banned.contains(word) {continue}
+        if i >= 5 {break}
+        print!("{} / ", word);
         i+=1;
+    }
+    print!("{}\n", data.word_count/data.scentence_count);
+}
+
+fn bulk_statistics(dir_path: &str, banlist_path: &str) {
+    let directory = fs::read_dir(dir_path).unwrap();
+    for file in directory {
+        let file = file.unwrap();
+        let file_path = file.path();
+        let file_name: String = file.file_name().into_string().unwrap();
+        let words = parse_words(&file_path, &file_name);
+        let banned = preprocess_banlist(banlist_path);
+        generate_output(&banned, &words);
     }
 }
 
 fn main() {
     let args: Vec<String> = env::args().collect();
     if args.len() < 2 {
-        eprintln!("Usage <file_path>");
+        eprintln!("Usage <dir_path> <file_path>");
         return;
     }
-    let words = parse_words(&args[1]);
-    let banned = preprocess_banlist(&args[2]);
-    sort_words(&banned, &words.words);
+    bulk_statistics(&args[1], &args[2]);
 }

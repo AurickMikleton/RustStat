@@ -25,9 +25,23 @@ fn preprocess_banlist(file_path: &str) -> HashSet<String> {
     return words;
 }
 
-fn parse_words(file_path_buffer: &std::path::PathBuf, name: &str)  -> TokenizedData {
-    let strip_punctuation = ['_', ';', '"', '.', '?', ',', '!'];
+fn count_scentences(line: &str) -> u32 {
     let scentence_punctuation = ['.', '?', '!', ';'];
+    let mut count: u32 = 0;
+    let mut i: u32 = 0;
+    for _ in line.split(&scentence_punctuation[..]) {
+        if i > 0 {count += 1;}
+        i += 1
+    }
+    return count;
+}
+
+fn is_not_alphabetic(c: char) -> bool {
+    !char::is_alphabetic(c)
+}
+
+fn parse_words(file_path_buffer: &std::path::PathBuf, name: &str) -> TokenizedData {
+    //let punctuation_to_strip = ['*', '=', '’', '“', '”', '(', ')', ']', '[', '_', ';', '"', '.', '?', ',', '!'];
     let file = File::open(file_path_buffer).expect("failed to open file");
     let reader = BufReader::new(file);
     let mut words: HashMap<String, usize> = HashMap::new();
@@ -35,17 +49,13 @@ fn parse_words(file_path_buffer: &std::path::PathBuf, name: &str)  -> TokenizedD
     let mut word_count: u32 = 0;
     for line in reader.lines() {
         let line = line.expect("failed to read");
-        for scentences in line.split(&strip_punctuation[..]) {
+        for scentences in line.split(is_not_alphabetic) {
             for word in scentences.split_whitespace().map(|w| w.to_lowercase()) {
                 *words.entry(word).or_insert(0) += 1;
                 word_count += 1;
             }
         }
-        let mut i: u32 = 0;
-        for _ in line.split(&scentence_punctuation[..]) {
-            if i > 0 {scentence_count += 1;}
-            i += 1
-        }
+        scentence_count += count_scentences(&line);
     }
     return TokenizedData {
         words: words,

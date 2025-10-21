@@ -41,7 +41,6 @@ fn is_not_alphabetic(c: char) -> bool {
 }
 
 fn parse_words(file_path_buffer: &std::path::PathBuf, name: &str) -> TokenizedData {
-    //let punctuation_to_strip = ['*', '=', '’', '“', '”', '(', ')', ']', '[', '_', ';', '"', '.', '?', ',', '!'];
     let file = File::open(file_path_buffer).expect("failed to open file");
     let reader = BufReader::new(file);
     let mut words: HashMap<String, usize> = HashMap::new();
